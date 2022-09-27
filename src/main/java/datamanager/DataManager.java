@@ -1,12 +1,12 @@
-package secondquestion;
-
-import java.sql.ResultSet;
-import org.json.simple.JSONArray;
-import org.json.simple.JSONObject;
+package datamanager;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import java.io.File;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Scanner;
 
 import org.apache.logging.log4j.LogManager;
@@ -16,7 +16,6 @@ public class DataManager {
 
 	static Logger logger = LogManager.getLogger(DataManager.class);
 
-	@SuppressWarnings("unchecked")
 	public static void main(String[] args) throws Exception {
 
 		CommonUtils utils = new CommonUtils();
@@ -43,34 +42,20 @@ public class DataManager {
 			String dbName = "student_data";
 			File file = new File("C:\\Users\\ecs\\Desktop\\ECS training\\resources\\" + "Book1.xlsx");
 			String path = file.getAbsolutePath();
-
 			String userName = "root";
 			String password = "abc123!@#";
-
 			utils.excelToDb(path, dbName, userName, password);
 		}
 
 		if (chooser.equals("3")) {
 
 			// database to json converter
-			JSONObject jsonObject = new JSONObject();
-			JSONArray array = new JSONArray();
-			ResultSet result = utils.dbToJson();
-			
-			while (result.next()) {
-				JSONObject studentRecord = new JSONObject();
-
-				studentRecord.put("admission no", result.getInt("admission_no"));
-				studentRecord.put("maths mark", result.getInt("maths"));
-				studentRecord.put("name", result.getString("name"));
-				studentRecord.put("physics mark", result.getInt("physics"));
-				studentRecord.put("chemistry mark", result.getInt("chemistry"));
-				array.add(studentRecord);
-				
-			}
-			jsonObject.put("student_data", array);
-			String json = jsonObject.toJSONString();
-			logger.info(json);
+			GsonBuilder gsonBuilder = new GsonBuilder();
+	        Gson gson = gsonBuilder.create();
+			ArrayList<HashMap<String, Object>> array=new ArrayList<HashMap<String, Object>>();
+			CommonUtils.dbToJson(array);
+			String jsonOject = gson.toJson(array);
+			logger.info("{\"student_data\":{}}",jsonOject);
 
 		}
 

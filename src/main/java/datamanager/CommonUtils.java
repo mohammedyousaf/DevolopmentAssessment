@@ -1,4 +1,4 @@
-package secondquestion;
+package datamanager;
 
 import java.io.File;
 
@@ -11,6 +11,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Scanner;
 
@@ -19,7 +20,6 @@ import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
-
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
@@ -30,11 +30,10 @@ import org.apache.logging.log4j.Logger;
 
 public class CommonUtils {
 
-	Logger logger = LogManager.getLogger(CommonUtils.class);
+	static Logger logger = LogManager.getLogger(CommonUtils.class);
 
-	public ResultSet dbToJson() throws SQLException {
+	public static List<HashMap<String, Object>> dbToJson(List<HashMap<String, Object>> array) throws SQLException {
 
-		@SuppressWarnings("resource")
 		Scanner scanner = new Scanner(System.in);
 		String dbName = "student_data";
 		String url = "jdbc:mysql://localhost:3306/";
@@ -42,32 +41,60 @@ public class CommonUtils {
 		String password = "abc123!@#";
 		Connection connection = null;
 		Statement statement = null;
+		try {
+			connection = DriverManager.getConnection(url + dbName, userName, password);
+			logger.info("Connection established");
+			statement = connection.createStatement();
+			logger.info("Type \"name\" to search by name or type \"adm\" to search by admission number : ");
+			String chooser = scanner.nextLine();
+			String searchName = "";
+			String admissionNumber = "";
+			int admissionNum = 0;
 
-		connection = DriverManager.getConnection(url + dbName, userName, password);
-		logger.info("Connection established");
-		statement = connection.createStatement();
-		logger.info("Type \"name\" to search by name or type \"adm\" to search by admission number : ");
-		String chooser = scanner.nextLine();
-		String searchName = "";
-		String admissionNumber = "";
-		int admissionNum = 0;
+			if (chooser.equals("name")) {
 
-		if (chooser.equals("name")) {
+				logger.info("Type the name you want to search :");
+				searchName = scanner.nextLine();
+			}
 
-			logger.info("Type the name you want to search :");
-			searchName = scanner.nextLine();
+			if (chooser.equals("adm")) {
+
+				logger.info("Type the admission number you want to search :");
+				admissionNumber = scanner.nextLine();
+				admissionNum = Integer.parseInt(admissionNumber);
+			}
+			scanner.close();
+			ResultSet result = statement.executeQuery("SELECT admission_no,name,physics,chemistry,maths\r\n"
+					+ " FROM students WHERE admission_no=" + admissionNum + " OR name=\"" + searchName + "\"");
+
+			while (result.next()) {
+				HashMap<String, Object> studentRecord = new HashMap<String, Object>();
+
+				studentRecord.put("admission no", result.getInt("admission_no"));
+				studentRecord.put("maths mark", result.getInt("maths"));
+				studentRecord.put("name", result.getString("name"));
+				studentRecord.put("physics mark", result.getInt("physics"));
+				studentRecord.put("chemistry mark", result.getInt("chemistry"));
+				array.add(studentRecord);
+
+			}
+			return array;
+		} finally {
+			if (connection != null) {
+				try {
+					connection.close();
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+			}
+			if (statement != null) {
+				try {
+					statement.close();
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+			}
 		}
-
-		if (chooser.equals("adm")) {
-
-			logger.info("Type the admission number you want to search :");
-			admissionNumber = scanner.nextLine();
-			admissionNum = Integer.parseInt(admissionNumber);
-		}
-
-		return statement.executeQuery("SELECT admission_no,name,physics,chemistry,maths\r\n"
-				+ " FROM students WHERE admission_no=" + admissionNum + " OR name=\"" + searchName + "\"");
-
 	}
 
 	public void excelToDb(String path, String dbName, String userName, String password)
